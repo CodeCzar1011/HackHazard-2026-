@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import secrets
 from typing import Literal, Optional
 
 from pydantic import AnyHttpUrl, Field, model_validator
@@ -80,10 +81,16 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
     API_KEY_HEADER_NAME: str = "x-guardaiian-api-key"
     DASHBOARD_API_KEY: Optional[str] = None
+    JWT_SECRET_KEY: str = Field(default_factory=lambda: secrets.token_urlsafe(48))
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRES_MINUTES: int = 30
+    JWT_REFRESH_TOKEN_EXPIRES_DAYS: int = 7
+    DASHBOARD_ADMIN_EMAIL: str = "admin@guardaiian.local"
+    DASHBOARD_ADMIN_PASSWORD: str = "change-me"
+    DASHBOARD_ADMIN_NAME: str = "GuardAIian Admin"
 
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 600
     REQUIRE_API_KEY: bool = False
-    REDIS_URL: Optional[str] = None
     RATE_LIMIT_FAIL_CLOSED: bool = True
     REDIS_URL: Optional[str] = None
 

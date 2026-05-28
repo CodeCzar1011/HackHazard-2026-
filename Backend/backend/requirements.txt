@@ -25,6 +25,7 @@ orjson==3.10.10
 ujson==5.10.0
 
 redis==5.2.1
+PyJWT==2.9.0
 
 tenacity==9.0.0
 

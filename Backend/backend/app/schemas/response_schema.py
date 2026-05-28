@@ -31,3 +31,18 @@ class ChatResponse(BaseModel):
     blocked: bool
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+
+class AuthUser(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: Literal["admin", "analyst", "viewer"] = "admin"
+
+
+class TokenPairResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: AuthUser
+

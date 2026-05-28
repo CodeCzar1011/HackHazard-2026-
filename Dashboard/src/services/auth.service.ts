@@ -1,19 +1,23 @@
-import type { LoginPayload, SignupPayload, AuthSession } from "@/types/api";
+import axios from "axios";
+import type { LoginPayload, SignupPayload, AuthSession, TokenPairDto } from "@/types/api";
 
 const TOKEN_KEY = "aegisflow.auth.session";
 const API_KEY_KEY = "aegisflow.auth.api_key";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  import.meta.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://localhost:8000";
 
-function buildSession(email: string, apiKey?: string): AuthSession {
-  const now = Date.now();
+function mapAuthSession(tokenPair: TokenPairDto, apiKey?: string): AuthSession {
   return {
-    accessToken: `local-access-${now}`,
-    refreshToken: `local-refresh-${now}`,
-    expiresAt: now + 1000 * 60 * 60 * 8,
-    role: "admin",
+    accessToken: tokenPair.access_token,
+    refreshToken: tokenPair.refresh_token,
+    expiresAt: Date.now() + tokenPair.expires_in * 1000,
+    role: tokenPair.user.role,
     user: {
-      id: `u_${email}`,
-      name: email.split("@")[0],
-      email,
+      id: tokenPair.user.id,
+      name: tokenPair.user.name,
+      email: tokenPair.user.email,
     },
     apiKey,
   };
@@ -22,16 +26,18 @@ function buildSession(email: string, apiKey?: string): AuthSession {
 export const authService = {
   async login(payload: LoginPayload): Promise<AuthSession> {
     const apiKey = localStorage.getItem(API_KEY_KEY) ?? undefined;
-    const session = buildSession(payload.email, apiKey);
+    const { data } = await axios.post<TokenPairDto>(`${API_BASE_URL}/api/v1/auth/login`, {
+      email: payload.email,
+      password: payload.password,
+    });
+    const session = mapAuthSession(data, apiKey);
     localStorage.setItem(TOKEN_KEY, JSON.stringify(session));
     return session;
   },
 
   async signup(payload: SignupPayload): Promise<AuthSession> {
-    const session = buildSession(payload.email);
-    session.user.name = payload.name;
-    localStorage.setItem(TOKEN_KEY, JSON.stringify(session));
-    return session;
+    // Backend currently provides admin-login flow; signup reuses login semantics.
+    return this.login({ email: payload.email, password: payload.password, remember: true });
   },
 
   async logout(): Promise<void> {
@@ -41,7 +47,10 @@ export const authService = {
   async refresh(session: AuthSession | null): Promise<AuthSession | null> {
     if (!session) return null;
     if (session.expiresAt > Date.now() + 30_000) return session;
-    const next = { ...session, accessToken: `local-access-${Date.now()}`, expiresAt: Date.now() + 1000 * 60 * 60 * 8 };
+    const { data } = await axios.post<TokenPairDto>(`${API_BASE_URL}/api/v1/auth/refresh`, {
+      refresh_token: session.refreshToken,
+    });
+    const next = mapAuthSession(data, session.apiKey);
     localStorage.setItem(TOKEN_KEY, JSON.stringify(next));
     return next;
   },

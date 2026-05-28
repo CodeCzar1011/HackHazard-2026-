@@ -120,3 +120,18 @@ export interface SignupPayload {
   email: string;
   password: string;
 }
+
+export interface AuthUserDto {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "analyst" | "viewer";
+}
+
+export interface TokenPairDto {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  user: AuthUserDto;
+}

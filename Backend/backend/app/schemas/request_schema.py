@@ -14,3 +14,12 @@ class AnalyzeRequest(BaseModel):
 class ChatRequest(AnalyzeRequest):
     forward_if_safe: bool = True
 
+
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=1, max_length=256)
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(min_length=8)
+

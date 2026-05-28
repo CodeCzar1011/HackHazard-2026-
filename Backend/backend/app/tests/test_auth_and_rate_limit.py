@@ -36,6 +36,25 @@ def test_analyze_requires_api_key_when_enabled():
     assert resp_ok.status_code == 200
 
 
+def test_auth_login_and_bearer_access():
+    os.environ["DASHBOARD_ADMIN_EMAIL"] = "admin@guardaiian.local"
+    os.environ["DASHBOARD_ADMIN_PASSWORD"] = "change-me"
+    os.environ["REQUIRE_API_KEY"] = "true"
+    client = create_test_client(require_api_key=True)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@guardaiian.local", "password": "change-me"},
+    )
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    secured = client.post(
+        "/api/v1/analyze",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"prompt": "hello", "session_id": "jwt-sess", "provider": "local"},
+    )
+    assert secured.status_code == 200
+
+
 def test_request_size_limit_returns_413_json():
     previous = os.environ.get("MAX_REQUEST_BODY_BYTES")
     os.environ["MAX_REQUEST_BODY_BYTES"] = "1024"
